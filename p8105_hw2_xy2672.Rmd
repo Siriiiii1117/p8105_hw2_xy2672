@@ -1,0 +1,46 @@
+---
+title: "p8105_hw2_xy2672"
+author: "Xirui Yang"
+output: github_document
+date: "2025-10-02"
+---
+
+
+```{r, echo = FALSE, message = FALSE}
+library(tidyverse)
+```
+
+## Problem 1
+
+Read the `pols_month` datafile and clean
+
+```{r, message = FALSE}
+pols_month_df = 
+  read_csv("data/pols-month.csv") |> 
+  janitor::clean_names() |> 
+  separate(mon, into = c("year", "month", "day"), sep = "-") |> 
+  mutate(
+    month = month.name[as.numeric(month)],
+    president = 
+      case_match(
+        prez_gop,
+        1 ~ "gop",
+        0 ~ "dem"
+      ),
+    president = as.factor(president)
+  ) |> 
+  select(-prez_gop, -prez_dem, -day)
+```
+
+```{r, message = FALSE}
+snp_df = 
+  read_csv("data/snp.csv") |> 
+  janitor::clean_names() |> 
+  separate(date, into = c("year", "month", "day"), sep = "/") |> 
+  mutate(
+    month = month.name[as.numeric(month)]) |> 
+  arrange(year, month) |> 
+  select(-day)
+```
+
+
