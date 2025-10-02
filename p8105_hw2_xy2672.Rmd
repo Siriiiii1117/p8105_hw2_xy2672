@@ -12,13 +12,13 @@ library(tidyverse)
 
 ## Problem 1
 
-Read the `pols_month` datafile and clean
+Read the `pols_month` datafile and clean:
 
 ```{r, message = FALSE}
 pols_month_df = 
   read_csv("data/pols-month.csv") |> 
   janitor::clean_names() |> 
-  separate(mon, into = c("year", "month", "day"), sep = "-") |> 
+  separate(mon, into = c("year", "month", "day"), sep = "-", convert = TRUE) |> 
   mutate(
     month = month.name[as.numeric(month)],
     president = 
@@ -32,15 +32,51 @@ pols_month_df =
   select(-prez_gop, -prez_dem, -day)
 ```
 
+The `pols_month_df` dataset contains the number of senators, governors and representatives on a specific `year-month` date. The `president` variable of this dataset indicates whether the president was Republican or Democratic. There are `r nrow(pols_month_df)` observations and `r ncol(pols_month_df)` variables. The range of the `year` variable is (`r range(pols_month_df$year, na.rm = TRUE)`).
+
+Read the `snp` datafile and clean:
+
 ```{r, message = FALSE}
 snp_df = 
   read_csv("data/snp.csv") |> 
   janitor::clean_names() |> 
-  separate(date, into = c("year", "month", "day"), sep = "/") |> 
+  separate(date, into = c("month", "day", "year"), sep = "/", convert = TRUE) |> 
   mutate(
+    year = if_else(year <= 15, 2000 + year, 1900 + year), # the year range is between 1950 to 2015
     month = month.name[as.numeric(month)]) |> 
   arrange(year, month) |> 
+  relocate(year, month) |> 
   select(-day)
 ```
 
+The `snp_df` dataset contains closing values of the S&P stock index on a specific `year-month` date. The `close` variable indicates the closing value. There are `r nrow(snp_df)` observations and `r ncol(snp_df)` variables. The range of the `year` variable is (`r range(snp_df$year, na.rm = TRUE)`).
+
+Read the `unemployment` datafile and tidy it:
+
+```{r, message = FALSE}
+unemployment_df = 
+  read_csv("data/unemployment.csv") |>
+  pivot_longer(
+    cols = -Year,
+    names_to = "month",
+    values_to = "unemployment"
+  ) |> 
+  mutate(
+    Year = as.numeric(Year),
+    month = factor(month, levels = month.abb, labels = month.name) # convert abbreviations to full name
+  ) |> 
+  janitor::clean_names()
+```
+
+The `unemployment_df` dataset contains the percentage of unemployment on a specific `year-month` date. The `unemployment` variable indicates the percentage of unemployment. There are `r nrow(unemployment_df)` observations and `r ncol(unemployment_df)` variables. The range of the `year` variable is (`r range(unemployment_df$year, na.rm = TRUE)`).
+
+Now joining the dataframe:
+
+```{r}
+pols_snp_unemployment = pols_month_df |> 
+  left_join(snp_df, by = c("year", "month")) |> 
+  left_join(unemployment_df, by = c("year", "month"))
+```
+
+The `pols_snp_unemployment` dataset merge the three datasets above: `pols_month_df`, `snp_df`, `unemployment_df`. The dataset range of the `year` variable remains to be (`r range(pols_month_df$year, na.rm = TRUE)`). This dataset gives information about the unemployment percentage and the closing values of the S&P stock index under which party takes the role in the government, e.g. the party of the `president`. The missing NA value of `close` and `unemployment` is because is the start point of the `pols_month_df` is `r min(pols_month_df$year, na.rm = TRUE)`, but `snp_df` starts at `r min(snp_df$year, na.rm = TRUE)` and `unemployment_df` starts at `r min(unemployment_df$year, na.rm = TRUE)`.
 
