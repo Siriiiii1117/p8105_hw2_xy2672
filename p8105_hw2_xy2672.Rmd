@@ -8,6 +8,7 @@ date: "2025-10-02"
 
 ```{r, echo = FALSE, message = FALSE}
 library(tidyverse)
+library(readxl)
 ```
 
 ## Problem 1
@@ -79,4 +80,78 @@ pols_snp_unemployment = pols_month_df |>
 ```
 
 The `pols_snp_unemployment` dataset merge the three datasets above: `pols_month_df`, `snp_df`, `unemployment_df`. The dataset range of the `year` variable remains to be (`r range(pols_month_df$year, na.rm = TRUE)`). This dataset gives information about the unemployment percentage and the closing values of the S&P stock index under which party takes the role in the government, e.g. the party of the `president`. The missing NA value of `close` and `unemployment` is because is the start point of the `pols_month_df` is `r min(pols_month_df$year, na.rm = TRUE)`, but `snp_df` starts at `r min(snp_df$year, na.rm = TRUE)` and `unemployment_df` starts at `r min(unemployment_df$year, na.rm = TRUE)`.
+
+
+## Problem 2
+
+Read and clean the Mr.Trash Wheel sheet:
+```{r}
+Mr_Trash_df = 
+  read_excel("data/202509 Trash Wheel Collection Data.xlsx", sheet = "Mr. Trash Wheel", skip = 1, range = cell_cols("A:N")) |> 
+  janitor::clean_names() |> 
+  filter(!is.na(dumpster)) |> 
+  mutate(
+    year = as.numeric(year),
+    sports_balls = as.integer(round(sports_balls)),
+    wheel = "Mr."
+  )
+```
+
+Read and clean the Professor Trash Wheel sheet:
+```{r}
+Prof_Trash_df = 
+  read_excel("data/202509 Trash Wheel Collection Data.xlsx", sheet = "Professor Trash Wheel", skip = 1, range = cell_cols("A:M")) |> 
+  janitor::clean_names() |> 
+  filter(!is.na(dumpster)) |> 
+  mutate(
+    year = as.numeric(year),
+    wheel = "Prof"
+  )
+```
+
+Read and clean the Gwynnda Trash Wheel sheet:
+```{r}
+Gwynnda_Trash_df = 
+  read_excel("data/202509 Trash Wheel Collection Data.xlsx", sheet = "Gwynns Falls Trash Wheel", skip = 1, range = cell_cols("A:L")) |> 
+  janitor::clean_names() |> 
+  filter(!is.na(dumpster)) |> 
+  mutate(
+    year = as.numeric(year),
+    wheel = "Gwynnda"
+  )
+```
+
+Now combine the three Trash Wheel dataset:
+```{r}
+All_Trash_Wheel_df = 
+  bind_rows(Mr_Trash_df, Prof_Trash_df, Gwynnda_Trash_df) |> 
+  relocate(wheel)
+```
+
+The combined 
+
+Calculating the total weight of trash collected by Professor Trash Wheel:
+
+```{r}
+Prof_Total_weight = 
+  All_Trash_Wheel_df |> 
+  filter(wheel == "Prof") |> 
+  pull(weight_tons) |> 
+  sum(na.rm = TRUE)
+```
+
+The total weight of trash collected by Professor Trash Wheel is `r Prof_Total_weight` tons.
+
+Calculating the total number of cigarette butts collected by Gwynnda in June of 2022:
+
+```{r}
+Gwynnda_total_cigarette_june2022 = 
+  All_Trash_Wheel_df |> 
+  filter(wheel == "Gwynnda", year == 2022, month == "June") |> 
+  pull(cigarette_butts) |> 
+  sum(na.rm = TRUE)
+```
+
+The total number of cigarette butts collected by Gwynnda in June of 2022 is `r as.integer(Gwynnda_total_cigarette_june2022)`.
+
 
