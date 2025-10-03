@@ -154,4 +154,36 @@ Gwynnda_total_cigarette_june2022 =
 
 The total number of cigarette butts collected by Gwynnda in June of 2022 is `r as.integer(Gwynnda_total_cigarette_june2022)`.
 
+## Problem 3
 
+Read the Zip code file and clean it:
+
+```{r}
+zipcode_df = 
+  read_csv("data/Zip Codes.csv") |> 
+  janitor::clean_names() |> 
+  select(county, zip_code, neighborhood)
+```
+
+Read the Zip_zori file and clean it:
+
+```{r}
+Zori_df = 
+  read_csv("data/Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv") |> 
+  janitor::clean_names() |> 
+  rename(zip_code = region_name, county = county_name) |> 
+  mutate(
+    county = str_remove(county, " County")
+  ) |> 
+  select(-state_name, -region_type)
+```
+
+Join the dataset together:
+
+```{r}
+Zori_zipcode_df = Zori_df |> 
+  left_join(zipcode_df, by = c("county", "zip_code")) |> 
+  relocate(zip_code, state, city, county)
+```
+
+The dataset has `r nrow(Zori_zipcode_df)` observations. There are `r Zori_zipcode_df |> summarize(n_distinct(zip_code, na.rm = TRUE))` unique zipcodes included. There are`r Zori_zipcode_df |> summarize(n_distinct(county, na.rm = TRUE))` unique counties included.
