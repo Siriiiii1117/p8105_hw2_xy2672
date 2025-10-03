@@ -9,6 +9,7 @@ date: "2025-10-02"
 ```{r, echo = FALSE, message = FALSE}
 library(tidyverse)
 library(readxl)
+library(knitr)
 ```
 
 ## Problem 1
@@ -183,7 +184,36 @@ Join the dataset together:
 ```{r}
 Zori_zipcode_df = Zori_df |> 
   left_join(zipcode_df, by = c("county", "zip_code")) |> 
-  relocate(zip_code, state, city, county)
+  relocate(zip_code, state, city, county, neighborhood)
 ```
 
-The dataset has `r nrow(Zori_zipcode_df)` observations. There are `r Zori_zipcode_df |> summarize(n_distinct(zip_code, na.rm = TRUE))` unique zipcodes included. There are`r Zori_zipcode_df |> summarize(n_distinct(county, na.rm = TRUE))` unique counties included.
+The dataset has `r nrow(Zori_zipcode_df)` observations. There are `r Zori_zipcode_df |> summarize(n_distinct(zip_code, na.rm = TRUE))` unique zipcodes included. There are `r Zori_zipcode_df |> summarize(n_distinct(county, na.rm = TRUE))` unique counties included.
+
+Finding missing zipcodes:
+```{r}
+missing_zips_df = zipcode_df |>
+  anti_join(Zori_df, by = "zip_code")
+```
+
+Many zipcodes are missing because there are no neighborhoods associated with them, so `Zori_df` exclude them because there are no prices that can be found. This is reflected in the `zipcode_df` if the `neighborhood` variable does not have any value.
+
+Comparing rental prices between Jan.2020 and Jan.2021:
+
+```{r}
+Jan_price_drop_df = Zori_zipcode_df |> 
+  select(
+    zip_code,
+    county,                   
+    neighborhood,
+    jan2020 = x2020_01_31,
+    jan2021 = x2021_01_31)|>
+  filter(!is.na(jan2020), !is.na(jan2021)) |>
+  mutate(change = jan2021 - jan2020) |>
+  arrange(change) |>
+  slice_head(n = 10) |> 
+  knitr::kable()
+print(Jan_price_drop_df)
+```
+
+The ten biggest drops in the price are shown in the table.
+
